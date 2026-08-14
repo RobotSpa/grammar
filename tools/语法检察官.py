@@ -836,7 +836,10 @@ def check(path):
     for i, p in enumerate(paras):
         if "带时态" not in p and "带着时态" not in p:
             continue
-        window = "".join(paras[max(0, i - 1):i + 3])
+        # 泛指规则的表述（没提具体单词）不算含糊，只有针对某个词下判断时才要求点明
+        if not re.search(r"[A-Za-z]{3,}", p):
+            continue
+        window = "".join(paras[max(0, i - 2):i + 3])
         if not any(t in window for t in TENSES):
             vague.append(p[:44])
     if vague:
