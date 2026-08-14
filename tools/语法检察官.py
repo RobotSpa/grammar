@@ -314,7 +314,24 @@ def check(path):
     else:
         passes.append("推理链：判断都有依据")
 
-    # ── 13 格式残留 ──
+    # ── 13 时态含糊：说了「带时态」却不说是哪个时态 ──
+    TENSES = ("一般现在时", "一般过去时", "一般将来时", "现在进行时", "过去进行时",
+              "现在完成时", "过去完成时", "现在完成进行时", "过去将来时",
+              "被动语态", "过去式", "过去分词", "三单", "原形")
+    vague = []
+    for i, p in enumerate(paras):
+        if "带时态" not in p and "带着时态" not in p:
+            continue
+        window = "".join(paras[max(0, i - 1):i + 3])
+        if not any(t in window for t in TENSES):
+            vague.append(p[:44])
+    if vague:
+        issues.append(f"【时态含糊】{len(vague)} 处只说「带时态」却没说是哪个时态。"
+                      f"学生不认识时态就跟不上\n            例：{vague[0]}…")
+    else:
+        passes.append("时态说明：均已点明具体时态")
+
+    # ── 14 格式残留 ──
     for bad, why in [("|", "疑似表格残留"), ("•", "项目符号"), ("- ", "列表符号")]:
         if bad in t and t.count(bad) > 3:
             warns.append(f"疑似 {why}：出现 {t.count(bad)} 次「{bad}」")
