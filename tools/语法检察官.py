@@ -63,7 +63,7 @@ FALLBACK = {
 # LAW_BEGIN
 _LAW = r"""
 {
-  "版本": 53,
+  "版本": 54,
   "阈值": {
     "互动密度_每千字": 13,
     "互动密度_目标": 12,
@@ -367,7 +367,8 @@ _LAW = r"""
     "自动进化必须有失控保护。第一版阈值自校准直接取合格稿最低值的 0.95，结果阈值一跳到 14 和 23，三份合格稿全部变成不合格，进化直接自毁。正确做法是双重保护：新阈值只取合格稿最低值的八成留足余量，且单次涨幅封顶两成。",
     "每节课出题前必须先列考点清单，逐个核对是否都考到了。第05课讲了主谓、主谓宾、主系表三种句型，可十四道题里主谓宾只在一道选择题里露了个脸，主系表反倒考了两次。核心考点漏考，等于这节课白讲。",
     "例题和随堂练习可以呼应，但不许原样复刻。第06课例题2是 was made to apologize，随堂4是 was made to clean——结构考点解法全一样，只换了动词。正确做法是换一个同规则的不同动词类别，比如例题用使役动词 make，随堂改用感官动词 see，让学生做一次迁移。",
-    "同一种题型不许在一节课里出现三次以上。第07课「写出主干」出了三道，加上两道判断主干的选择题，十四道题里五道在做同一件事。题型要有变化：写主干、数谓语、辨非谓语、改错，轮着来。"
+    "同一种题型不许在一节课里出现三次以上。第07课「写出主干」出了三道，加上两道判断主干的选择题，十四道题里五道在做同一件事。题型要有变化：写主干、数谓语、辨非谓语、改错，轮着来。",
+    "单节合格不代表整套课不重复。七节课各自都通过了二十一项检查，可放在一起看，十二句套话在半数以上课里逐字出现——开场白、课前测引导语、题目衔接语、缓冲指令、小结开场、结尾强调，全是一个模子。学生连着看会觉得是模板拼的。每节课必须换一套说法，跨课查重用 --cross。"
   ],
   "学习记录": [
     {
@@ -740,6 +741,12 @@ _LAW = r"""
       "日期": "2026-08-14",
       "来源": "第07课",
       "教训": "同一种题型不许在一节课里出现三次以上。第07课「写出主干」出了三道，加上两道判断主干的选择题，十四道题里五道在做同一件事。题型要有变化：写主干、数谓语、辨非谓语、改错，轮着来。",
+      "落地": "写入硬伤清单"
+    },
+    {
+      "日期": "2026-08-14",
+      "来源": "跨课查重",
+      "教训": "单节合格不代表整套课不重复。七节课各自都通过了二十一项检查，可放在一起看，十二句套话在半数以上课里逐字出现——开场白、课前测引导语、题目衔接语、缓冲指令、小结开场、结尾强调，全是一个模子。学生连着看会觉得是模板拼的。每节课必须换一套说法，跨课查重用 --cross。",
       "落地": "写入硬伤清单"
     }
   ],
@@ -1885,6 +1892,80 @@ def auto_evolve(commit=False):
     return 0
 
 
+# ══════════════════════════════════════════════
+#  跨课查重：单节合格不代表整套课不重复
+# ══════════════════════════════════════════════
+
+def cross_check():
+    """把所有课放在一起查：套话逐字重复、例句跨课复用"""
+    import glob as _g
+    print("\n" + "═" * 68)
+    print("  跨课查重　　单节合格 ≠ 整套课不重复")
+    print("═" * 68)
+    files = sorted(_g.glob(os.path.join(DOCS, "*.docx")))
+    if len(files) < 3:
+        print("  课程不足三节，暂不需要跨课查重。\n"); return 0
+    texts = {}
+    for f in files:
+        m = re.search(r"第(\d+)课", f)
+        texts[m.group(0) if m else f] = extract(f)
+    total = len(texts)
+    bad = 0
+
+    # ① 套话逐字重复：长度 ≥10 的整句，在半数以上课里原样出现
+    sent_hit = {}
+    for name, t in texts.items():
+        for line in t.split("\n"):
+            line = line.strip()
+            if 10 <= zh(line) <= 40 and not line.startswith(("题目", "**", "A.")):
+                sent_hit.setdefault(line, set()).add(name)
+    dup = [(l, s_) for l, s_ in sent_hit.items() if len(s_) > total / 2]
+    dup.sort(key=lambda x: -len(x[1]))
+    if dup:
+        bad += 1
+        print(f"\n  ✗ 套话重复：{len(dup)} 句在半数以上课里逐字出现")
+        for l, s_ in dup[:8]:
+            print(f"      {len(s_)}/{total} 课　「{l[:38]}」")
+        print("      学生连着看会觉得是模板拼的。每节换一套说法。")
+    else:
+        print("\n  ✓ 套话：无半数以上课的逐字重复")
+
+    # ② 例句跨课复用
+    fp = {}
+    for name, t in texts.items():
+        for m in re.finditer(r"[A-Z][A-Za-z'’,\. ]{18,90}[\.。]", t):
+            w = re.sub(r"[^A-Za-z ]", " ", m.group(0)).split()
+            if len(w) < 7:
+                continue
+            k = " ".join(x.lower() for x in w[:7])
+            fp.setdefault(k, set()).add(name)
+    reuse = [(k, v) for k, v in fp.items() if len(v) > 1]
+    if reuse:
+        bad += 1
+        print(f"\n  ✗ 例句跨课复用：{len(reuse)} 个句子在不同课里出现")
+        for k, v in reuse[:6]:
+            print(f"      {sorted(v)}　{k[:44]}")
+    else:
+        print("  ✓ 例句：无跨课复用")
+
+    # ③ 各课时长离散度
+    lens = {n: zh(t) / TH.get("口播每分钟字数", 250) for n, t in texts.items()}
+    lo, hi = min(lens.values()), max(lens.values())
+    if hi > lo * 2:
+        bad += 1
+        print(f"\n  ✗ 时长不齐：最短 {lo:.0f} 分，最长 {hi:.0f} 分，相差一倍以上")
+        for n, v in sorted(lens.items(), key=lambda x: -x[1])[:3]:
+            print(f"      {n}  {v:.0f} 分")
+        print("      同一套课时长差太多，体例不统一。")
+    else:
+        print(f"  ✓ 时长：{lo:.0f} 到 {hi:.0f} 分，离散度可接受")
+
+    print("\n" + "═" * 68)
+    print(f"  跨课查重：{'全部通过' if not bad else str(bad) + ' 类问题'}")
+    print("═" * 68 + "\n")
+    return bad
+
+
 def watch():
     """守候模式：监听源码改动，一改就自动审查修正"""
     print("\n守候中……源码一有改动就自动审查修正。Ctrl+C 退出。\n")
@@ -1909,6 +1990,8 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     if "--rules" in a:
         show_rules(); sys.exit(0)
+    if "--cross" in a:
+        sys.exit(cross_check())
     if "--evolve" in a:
         sys.exit(auto_evolve(commit="--commit" in a))
     if "--learn" in a:
