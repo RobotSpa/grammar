@@ -63,12 +63,12 @@ FALLBACK = {
 # LAW_BEGIN
 _LAW = r"""
 {
-  "版本": 44,
+  "版本": 50,
   "阈值": {
-    "互动密度_每千字": 8,
+    "互动密度_每千字": 13,
     "互动密度_目标": 12,
     "逐题互动_每题最少": 2,
-    "段落承接率": 12,
+    "段落承接率": 16,
     "段落承接率_目标": 18,
     "平均句长_上限": 32,
     "平均句长_目标": 27,
@@ -267,7 +267,25 @@ _LAW = r"""
     "圈好了",
     "写好了",
     "写完了",
-    "选好了"
+    "选好了",
+    "你上手了",
+    "你先写",
+    "你先暂停",
+    "你划掉",
+    "你判断",
+    "你听",
+    "你想啊",
+    "你想想",
+    "你捋一遍",
+    "你记住",
+    "你记牢",
+    "你说清楚",
+    "你说过",
+    "写好了吗",
+    "写完了吗",
+    "圈好了吗",
+    "意思通吗",
+    "语法有错吗"
   ],
   "承接词表": [
     "好，",
@@ -293,7 +311,11 @@ _LAW = r"""
     "对，",
     "没错",
     "问题来了",
-    "说到底"
+    "说到底",
+    "先自己",
+    "所以你",
+    "所以这",
+    "最后一"
   ],
   "硬伤清单": [
     "lie / lay 记忆法：不能说「短的不及物长的及物」——两者都是三个字母。正确记法：及物的 raise、lay、seat 都带字母 a；不及物的 rise、lie、sit 一个 a 都没有",
@@ -341,7 +363,8 @@ _LAW = r"""
     "题目不能考本课之后才讲的规则。第02课主题是「认识主语和谓语」，却出了 along with 伴随成分不影响单复数、neither…nor 就近原则——这两条是第55到57课主谓一致的内容，本课根本没教。判断标准很简单：这道题的解法，能不能只用本课讲过的东西推出来？推不出来就是超纲。",
     "正文讲了几种情况，题目就要覆盖到。第02课正文花整段讲了谓语的四种构成（实义动词／系动词加表语／情态动词加原形／助动词加主要动词），可十四道题里情态动词和助动词那两种一道没考。讲了不练等于没讲。",
     "论证不能拿错误解读去反证。讲 has been repaired 时说「你光说一个 has，老桥有什么？说不通」——可 has 在这儿是助动词，本来就不表示有。拿一个错误的解读去证明结论，学生一较真就发现老师在绕。正确讲法是直接说：助动词本身不表示动作，它只负责扛时态，真正的动作是后面那个词。",
-    "同一个英文例句不许在题目和正文里各讲一遍。第02课课前测第1题已经把 The tall boy in the blue coat 完整分析过，正文讲主语中心词时又原封不动讲第二遍，学生会觉得在炒冷饭。正文要换新例句，并明确回指：刚才课前测第一题我提了一句中心词，说完就过去了，现在我们把它讲透。"
+    "同一个英文例句不许在题目和正文里各讲一遍。第02课课前测第1题已经把 The tall boy in the blue coat 完整分析过，正文讲主语中心词时又原封不动讲第二遍，学生会觉得在炒冷饭。正文要换新例句，并明确回指：刚才课前测第一题我提了一句中心词，说完就过去了，现在我们把它讲透。",
+    "自动进化必须有失控保护。第一版阈值自校准直接取合格稿最低值的 0.95，结果阈值一跳到 14 和 23，三份合格稿全部变成不合格，进化直接自毁。正确做法是双重保护：新阈值只取合格稿最低值的八成留足余量，且单次涨幅封顶两成。"
   ],
   "学习记录": [
     {
@@ -690,6 +713,12 @@ _LAW = r"""
       "日期": "2026-08-14",
       "来源": "第02课",
       "教训": "同一个英文例句不许在题目和正文里各讲一遍。第02课课前测第1题已经把 The tall boy in the blue coat 完整分析过，正文讲主语中心词时又原封不动讲第二遍，学生会觉得在炒冷饭。正文要换新例句，并明确回指：刚才课前测第一题我提了一句中心词，说完就过去了，现在我们把它讲透。",
+      "落地": "写入硬伤清单"
+    },
+    {
+      "日期": "2026-08-14",
+      "来源": "自动进化",
+      "教训": "自动进化必须有失控保护。第一版阈值自校准直接取合格稿最低值的 0.95，结果阈值一跳到 14 和 23，三份合格稿全部变成不合格，进化直接自毁。正确做法是双重保护：新阈值只取合格稿最低值的八成留足余量，且单次涨幅封顶两成。",
       "落地": "写入硬伤清单"
     }
   ],
@@ -1691,6 +1720,149 @@ def write_log(rows):
 
 
 
+# ══════════════════════════════════════════════
+#  自动进化：不用人教，自己从稿子里长出新规则
+# ══════════════════════════════════════════════
+
+def auto_evolve(commit=False):
+    """
+    以「已定稿的合格稿」为黄金样本，自动完成四件事：
+      1. 词表进化——从合格稿里发现新的互动说法与承接词，自动收录
+      2. 阈值自校准——把标准提到合格稿的实际水平，只升不降
+      3. 风险统计——从审查日志里统计哪类问题最常犯，排出优先级
+      4. 违禁候选——找出只在退回稿里出现、合格稿从不用的表达，列出待确认
+    前三项自动写回本体铁律区；第四项只提示，不自动写入，避免误伤。
+    """
+    import glob as _g
+    print("\n" + "═" * 68)
+    print("  语法检察官 · 自动进化")
+    print("═" * 68)
+
+    good, bad = [], []
+    for f in sorted(_g.glob(os.path.join(DOCS, "*.docx"))):
+        name, zh_, issues, warns, passes = check(f)
+        (good if not issues else bad).append((f, extract(f)))
+    print(f"  样本：合格稿 {len(good)} 份　退回稿 {len(bad)} 份")
+    if len(good) < 2:
+        print("  合格稿不足两份，无法进化。先做出两节达标的课。\n")
+        return 1
+
+    law = dict(LAW)
+    changed = []
+
+    # ── 1 词表进化 ──
+    gtxt = "".join(x[1] for x in good)
+    newI, newC = [], []
+    # 互动说法：以「你」开头或以「吗？」收尾的短语
+    for m in re.finditer(r"你[\u4e00-\u9fff]{1,3}(?=[，。？])", gtxt):
+        w = m.group(0)
+        # 「你的」「你们」这类只是代词，不是互动指令，排除
+        if w in ("你的", "你们", "你我", "你他") or w.endswith(("的", "们")):
+            continue
+        if w not in law["互动词表"] and gtxt.count(w) >= 3:
+            newI.append(w)
+    for m in re.finditer(r"[\u4e00-\u9fff]{2,4}吗(?=？)", gtxt):
+        w = m.group(0)
+        if w not in law["互动词表"] and gtxt.count(w) >= 3:
+            newI.append(w)
+    # 承接词：段首出现三次以上的 1-3 字
+    heads = {}
+    for line in gtxt.split("\n"):
+        line = line.strip()
+        if len(line) < 12 or line.startswith(("题目", "答案", "**", "A.")):
+            continue
+        for n_ in (3, 2, 1):
+            h = line[:n_]
+            if re.match(r"^[\u4e00-\u9fff]+[，。]?$", h) or (n_ > 1 and h[-1] == "，"):
+                heads[h] = heads.get(h, 0) + 1
+                break
+    # 承接词必须是转场虚词，不能是实义开头（主语是／你看这 这类是内容不是承接）
+    OKC = ("好", "那", "来", "再", "又", "但", "可", "所以", "然后", "接着", "现在",
+           "最后", "反过来", "顺便", "另外", "先", "行", "对", "停", "既然", "其实")
+    for h, c in heads.items():
+        if c >= 5 and h not in law["承接词表"] and len(h) <= 3 \
+           and any(h.startswith(x) for x in OKC):
+            newC.append(h)
+    newI = sorted(set(newI))[:12]
+    newC = sorted(set(newC))[:8]
+    if newI:
+        law["互动词表"] += newI
+        changed.append(f"互动词表 +{len(newI)}：{'、'.join(newI)}")
+    if newC:
+        law["承接词表"] += newC
+        changed.append(f"承接词表 +{len(newC)}：{'、'.join(newC)}")
+
+    # ── 2 阈值自校准（只升不降）──
+    metrics = {"互动密度_每千字": [], "段落承接率": [], "单段字数上限": []}
+    for f, txt in good:
+        paras = [p for p in txt.split("\n") if p.strip()]
+        N = zh(txt)
+        ic = sum(txt.count(k) for k in law["互动词表"])
+        metrics["互动密度_每千字"].append(ic / max(N, 1) * 1000)
+        body = [p.strip() for p in paras if len(p.strip()) > 12
+                and not p.strip().startswith(("题目", "答案", "解析", "**"))]
+        lk = sum(1 for p in body if any(p.startswith(c) for c in law["承接词表"]))
+        metrics["段落承接率"].append(lk / max(len(body), 1) * 100)
+    for k in ("互动密度_每千字", "段落承接率"):
+        vals = metrics[k]
+        if not vals:
+            continue
+        old = law["阈值"].get(k, 0)
+        # 保护一：只取合格稿最低值的八成，留足余量，避免把自己卡死
+        # 保护二：单次最多上调两成，防止一步跳到极端
+        floor = int(min(min(vals) * 0.8, old * 1.2))
+        if floor > old:
+            law["阈值"][k] = floor
+            changed.append(f"阈值 {k}：{old} → {floor}"
+                           f"（合格稿最低 {min(vals):.1f}，留两成余量）")
+
+    # ── 3 风险统计 ──
+    if os.path.exists(LOG):
+        logtxt = io.open(LOG, encoding="utf-8").read()
+        cnt = {}
+        for m in re.finditer(r"【([^】]+)】", logtxt):
+            cnt[m.group(1)] = cnt.get(m.group(1), 0) + 1
+        rank = sorted(cnt.items(), key=lambda x: -x[1])[:8]
+        if rank:
+            law["高频风险"] = [f"{k}（累计 {v} 次）" for k, v in rank]
+            changed.append(f"高频风险已更新：{rank[0][0]} 居首，累计 {rank[0][1]} 次")
+
+    # ── 4 违禁候选（只提示，不自动写入）──
+    btxt = "".join(x[1] for x in bad)
+    cand = []
+    for m in re.finditer(r"[\u4e00-\u9fff]{3,6}", btxt):
+        w = m.group(0)
+        # 语法术语与结构名不是违禁词，排除
+        if re.search(r"主谓|主系|宾补|双宾|句型|主干|谓宾|定语|状语|表语|宾语|"
+                     r"从句|时态|语态|分词|不定式|动名词|名词|动词|形容词|副词", w):
+            continue
+        if btxt.count(w) >= 4 and w not in gtxt and w not in law["违禁词"]:
+            cand.append(w)
+    cand = sorted(set(cand), key=lambda x: -btxt.count(x))[:10]
+
+    # ── 写回本体 ──
+    if changed:
+        law["版本"] += 1
+        save_law(law)
+        print(f"\n  自动学到 {len(changed)} 项，已写回本体铁律区：")
+        for x in changed:
+            print("    → " + x)
+        print(f"\n  铁律版本 → v{law['版本']}")
+    else:
+        print("\n  本轮没有发现可自动收录的新规则。")
+
+    if cand:
+        print("\n  违禁候选（只在退回稿出现、合格稿从不用，需人工确认）：")
+        print("    " + "、".join(cand))
+        print("    确认后执行：--learn 违禁 <词> <原因>")
+
+    if commit:
+        sh("git add -A && git commit -q -m '自动进化：更新铁律' && git push -q origin main", cwd=ROOT)
+        print("\n  已自动提交 GitHub")
+    print()
+    return 0
+
+
 def watch():
     """守候模式：监听源码改动，一改就自动审查修正"""
     print("\n守候中……源码一有改动就自动审查修正。Ctrl+C 退出。\n")
@@ -1715,6 +1887,8 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     if "--rules" in a:
         show_rules(); sys.exit(0)
+    if "--evolve" in a:
+        sys.exit(auto_evolve(commit="--commit" in a))
     if "--learn" in a:
         i = a.index("--learn")
         rest = a[i + 1:]
