@@ -289,7 +289,32 @@ def check(path):
     else:
         passes.append(f"讲义腔：仅 {rate:.0f}%")
 
-    # ── 12 格式残留 ──
+    # ── 12 推理跳步：针对具体单词下判断，却不给依据 ──
+    VERDICT = ("是谓语", "是宾语", "是表语", "是宾补", "是宾语补足语",
+               "是系动词", "是双宾语", "就它", "就是谓语", "就是系动词")
+    GROUND = ("因为", "所以", "说明", "既然", "带着", "变过形", "定时态", "过去式",
+              "三单", "带时态", "它自己", "干的活", "换成", "连起来", "承受", "落在",
+              "两点", "后面跟", "后面接", "位置", "拎出来", "挂着", "补一块", "补完",
+              "变成是", "口味", "本身", "意思", "整句", "时态就是")
+    jump = []
+    for i, p in enumerate(paras):
+        if zh(p) > 34 or zh(p) < 2 or p.endswith("？"):
+            continue
+        if p.startswith(("题目", "答案", "解析")):
+            continue
+        if not re.search(r"[A-Za-z]{3,}", p):      # 必须是在judge一个具体英文词
+            continue
+        if any(v in p for v in VERDICT) and not any(g in p for g in GROUND):
+            jump.append(p)
+    if len(jump) >= 2:
+        issues.append(f"【推理跳步】{len(jump)} 处对具体单词直接下判断没给依据，"
+                      f"听着像背结论\n            例：{jump[0][:40]}…")
+    elif jump:
+        warns.append(f"{len(jump)} 处判断偏简，可补一句依据：{jump[0][:26]}…")
+    else:
+        passes.append("推理链：判断都有依据")
+
+    # ── 13 格式残留 ──
     for bad, why in [("|", "疑似表格残留"), ("•", "项目符号"), ("- ", "列表符号")]:
         if bad in t and t.count(bad) > 3:
             warns.append(f"疑似 {why}：出现 {t.count(bad)} 次「{bad}」")
