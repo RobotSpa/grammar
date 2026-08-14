@@ -33,19 +33,52 @@ RULES = os.path.join(ROOT, "tools", "铁律.json")
 LOG = os.path.join(ROOT, "tools", "审查日志.md")
 
 
+# ══════════════════════════════════════════════════════════
+#  铁律 —— 焊死在本体里，不依赖任何外部文件
+#  这是本智能体存在的唯一理由。所有规则、所有阈值、所有判定，
+#  都是为了守住这一条。规则库丢了它照样知道自己在干什么。
+# ══════════════════════════════════════════════════════════
+IRON_LAW = (
+    "本稿是【视频逐字稿】，不是讲义。\n"
+    "  一个人对着镜头说话，念出来必须像人在讲，不是像人在念。\n"
+    "  凡是需要用眼睛看才懂的东西——表格、罗列、分区标题——一律不许出现。\n"
+    "  互动性必须强，而且必须是当题写的，不许套模板。"
+)
+
+# 规则库缺失时的兜底：铁律本身不可缺，其余降级为空
+FALLBACK = {
+    "铁律": IRON_LAW, "版本": 0, "更新于": "—",
+    "阈值": {"互动密度_每千字": 8, "互动密度_目标": 12, "逐题互动_每题最少": 2,
+             "段落承接率": 12, "段落承接率_目标": 18, "平均句长_上限": 32,
+             "平均句长_目标": 27, "超长句_上限句数": 6, "超长句_字数线": 55},
+    "题量规格": {"课前测": 6, "例题": 2, "随堂练习题": 6},
+    "违禁词": {}, "术语红线": [], "互动词表": [], "承接词表": [],
+    "硬伤清单": [], "不可代笔项": ["互动密度", "逐题互动"], "学习记录": [],
+}
+
+
 def load_rules():
-    with io.open(RULES, encoding="utf-8") as f:
-        return json.load(f)
+    """读取规则库。铁律以本体内的 IRON_LAW 为准，外部文件改不了它。"""
+    try:
+        with io.open(RULES, encoding="utf-8") as f:
+            r = json.load(f)
+    except Exception as e:
+        print(f"  ! 规则库不可读（{e}），已降级运行，但铁律仍然生效。")
+        r = dict(FALLBACK)
+    r["铁律"] = IRON_LAW          # 铁律不可被外部覆盖
+    for k, v in FALLBACK.items():
+        r.setdefault(k, v)
+    return r
 
 
 def save_rules(r):
     r["更新于"] = datetime.date.today().isoformat()
+    r["铁律"] = "以 语法检察官.py 中的 IRON_LAW 为准，此处不再重复"
     with io.open(RULES, "w", encoding="utf-8") as f:
         json.dump(r, f, ensure_ascii=False, indent=2)
 
 
 RB = load_rules()
-IRON = RB["铁律"]
 TH = RB["阈值"]
 
 # ══════════════════════════════════════════════════════════
@@ -230,7 +263,33 @@ def check(path):
     if long_n > TH["超长句_上限句数"]:
         warns.append(f"{long_n} 句超过 55 字，建议拆开")
 
-    # ── 11 格式残留 ──
+    # ── 11 讲义腔：长段落里没有一个「你我咱」，就是在自说自话不是在对人讲 ──
+    ADDR = ("你", "我", "咱", "同学")
+    lecture = []
+    for p in paras:
+        if zh(p) < 30:
+            continue
+        if p.startswith(("题目", "答案", "解析")) or re.match(r"^\*{0,2}(课前测|例题|随堂)", p):
+            continue
+        if any(a in p for a in ADDR):
+            continue
+        if any(k in p for k in INTERACT):
+            continue
+        # 口语语气词：带了就说明是在说话，不是在写条文
+        if any(k in p for k in ("吧", "呢", "啊", "嘛", "咯", "行了", "就完了",
+                                "而已", "对了", "得了", "着呢", "才对")):
+            continue
+        lecture.append(p)
+    rate = len(lecture) / max(len([p for p in paras if zh(p) >= 30]), 1) * 100
+    if rate > 18:
+        issues.append(f"【讲义腔】{len(lecture)} 个长段落通篇没有「你/我/咱」，占 {rate:.0f}%，"
+                      f"是在自说自话不是在对人讲\n            例：{lecture[0][:40]}…")
+    elif rate > 10:
+        warns.append(f"讲义腔段落占 {rate:.0f}%，可再加对学生说话的口气")
+    else:
+        passes.append(f"讲义腔：仅 {rate:.0f}%")
+
+    # ── 12 格式残留 ──
     for bad, why in [("|", "疑似表格残留"), ("•", "项目符号"), ("- ", "列表符号")]:
         if bad in t and t.count(bad) > 3:
             warns.append(f"疑似 {why}：出现 {t.count(bad)} 次「{bad}」")
@@ -567,7 +626,9 @@ def run(ids=None, auto=True, commit=False):
     print("\n" + "═" * 68)
     print("  语法检察官 · 智能体　　自动构建 → 审查 → 修正 → 复审")
     print("═" * 68)
-    print("  【铁律】" + IRON[:34] + "……")
+    print("  【铁律】" + IRON_LAW.split(chr(10))[0])
+    for ln in IRON_LAW.split(chr(10))[1:]:
+        print("  " + ln.strip().rjust(len(ln.strip()) + 8))
     print(f"  规则库 v{RB['版本']}　违禁 {len(BANNED)} · 红线 {len(TERM_RED)} · "
           f"互动词 {len(INTERACT)} · 硬伤 {len(RB['硬伤清单'])}")
     print("═" * 68)
@@ -675,10 +736,10 @@ def learn(kind, value, reason="", source=""):
 def show_rules():
     r = load_rules()
     print("\n" + "═" * 68)
-    print("  铁律")
+    print("  铁律　（焊在 语法检察官.py 里，外部文件改不动）")
     print("═" * 68)
-    for line in wrap_cn(r["铁律"], 60):
-        print("  " + line)
+    for ln in IRON_LAW.split("\n"):
+        print("  " + ln.strip())
     print(f"\n  规则库 v{r['版本']}　更新于 {r['更新于']}")
     print(f"  违禁词 {len(r['违禁词'])} 条　术语红线 {len(r['术语红线'])} 条　"
           f"互动词 {len(r['互动词表'])} 个　承接词 {len(r['承接词表'])} 个　"
