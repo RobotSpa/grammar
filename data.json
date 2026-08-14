@@ -22,35 +22,35 @@
         "big": "句法",
         "mod": "句子骨架",
         "title": "句子成分2：宾语、表语、宾语补足语",
-        "done": false
+        "done": true
       },
       {
         "no": 4,
         "big": "句法",
         "mod": "句子骨架",
         "title": "句子成分3：定语、状语、同位语",
-        "done": false
+        "done": true
       },
       {
         "no": 5,
         "big": "句法",
         "mod": "句子骨架",
         "title": "简单句五大基本句型（上）：主谓/主谓宾/主系表",
-        "done": false
+        "done": true
       },
       {
         "no": 6,
         "big": "句法",
         "mod": "句子骨架",
         "title": "简单句五大基本句型（下）：主谓双宾/主谓宾宾补",
-        "done": false
+        "done": true
       },
       {
         "no": 7,
         "big": "句法",
         "mod": "句子骨架",
         "title": "句子主干提取与一个句子只有一个谓语原则",
-        "done": false
+        "done": true
       },
       {
         "no": 8,
