@@ -48,6 +48,10 @@ BANNED = {
     "超重要": "营销腔",
     "百试百灵": "夸大表述",
     "黄金判据": "包装词，直说「判断标准」",
+    "跟上了吗？我们接着说": "机械模板互动句，读起来像机器人",
+    "这一点你听明白了吗": "机械模板互动句，读起来像机器人",
+    "你先在心里过一遍。": "机械模板互动句，读起来像机器人",
+    "来，跟我一起走一遍流程": "机械模板互动句，读起来像机器人",
 }
 
 # ══════════════════════════════════════════════════════════
@@ -564,10 +568,9 @@ def fix_simple(s, log):
 REPAIRS = [
     (("罗列体",),                       fix_enumeration),
     (("衔接",),                         fix_leads),
-    (("道题的讲评互动",),                fix_block_interaction),
-    (("道题的讲评互动",),                fix_manual_blocks),
     (("不够丝滑", "段落承接率"),          fix_connect),
-    (("互动标记密度",),                  fix_density),
+    # 互动类不做自动代笔：机器只会灌同一套模板，反而把稿子做假。
+    # 检出即退回，必须由人按当题学情重写。
     (("违禁词", "术语红线", "题面"),      fix_simple),
 ]
 
@@ -621,7 +624,12 @@ def run(ids=None, auto=True, commit=False):
                 fail += 1; break
             log = repair(js, issues)
             if not log:
-                print("      ! 无可自动修正项，需人工重写"); fail += 1; break
+                if any("互动" in x for x in issues):
+                    print("      ! 互动不足属内容问题，机器不代笔。")
+                    print("        请按当题学情手写：预判学生会怎么错、用他的话说出来、给具体场景。")
+                else:
+                    print("      ! 无可自动修正项，需人工重写")
+                fail += 1; break
             for l in log:
                 print("      → " + l)
             if not build(js):
