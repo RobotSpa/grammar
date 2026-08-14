@@ -45,6 +45,26 @@
 
 ---
 
+## 已完成课程
+
+| 课次 | 内容 | 下载 |
+|---|---|---|
+| 第 1 课 | 词类总览 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC01%E8%AF%BE-%E8%AF%8D%E7%B1%BB%E6%80%BB%E8%A7%88.docx) |
+| 第 2 课 | 主语与谓语 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC02%E8%AF%BE-%E4%B8%BB%E8%AF%AD%E4%B8%8E%E8%B0%93%E8%AF%AD.docx) |
+| 第 3 课 | 宾语表语宾语补足语 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC03%E8%AF%BE-%E5%AE%BE%E8%AF%AD%E8%A1%A8%E8%AF%AD%E5%AE%BE%E8%AF%AD%E8%A1%A5%E8%B6%B3%E8%AF%AD.docx) |
+| 第 4 课 | 定语状语同位语 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC04%E8%AF%BE-%E5%AE%9A%E8%AF%AD%E7%8A%B6%E8%AF%AD%E5%90%8C%E4%BD%8D%E8%AF%AD.docx) |
+| 第 5 课 | 五大基本句型上 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC05%E8%AF%BE-%E4%BA%94%E5%A4%A7%E5%9F%BA%E6%9C%AC%E5%8F%A5%E5%9E%8B%E4%B8%8A.docx) |
+| 第 6 课 | 五大基本句型下 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC06%E8%AF%BE-%E4%BA%94%E5%A4%A7%E5%9F%BA%E6%9C%AC%E5%8F%A5%E5%9E%8B%E4%B8%8B.docx) |
+| 第 7 课 | 句子主干提取 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC07%E8%AF%BE-%E5%8F%A5%E5%AD%90%E4%B8%BB%E5%B9%B2%E6%8F%90%E5%8F%96.docx) |
+| 第 8 课 | 名词分类与可数不可数 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC08%E8%AF%BE-%E5%90%8D%E8%AF%8D%E5%88%86%E7%B1%BB%E4%B8%8E%E5%8F%AF%E6%95%B0%E4%B8%8D%E5%8F%AF%E6%95%B0.docx) |
+| 第 9 课 | 复数规则变化 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC09%E8%AF%BE-%E5%A4%8D%E6%95%B0%E8%A7%84%E5%88%99%E5%8F%98%E5%8C%96.docx) |
+| 第 10 课 | 复数不规则变化 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC10%E8%AF%BE-%E5%A4%8D%E6%95%B0%E4%B8%8D%E8%A7%84%E5%88%99%E5%8F%98%E5%8C%96.docx) |
+| 第 11 课 | 不可数名词的量化表达 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC11%E8%AF%BE-%E4%B8%8D%E5%8F%AF%E6%95%B0%E5%90%8D%E8%AF%8D%E7%9A%84%E9%87%8F%E5%8C%96%E8%A1%A8%E8%BE%BE.docx) |
+| 第 12 课 | 名词所有格上 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC12%E8%AF%BE-%E5%90%8D%E8%AF%8D%E6%89%80%E6%9C%89%E6%A0%BC%E4%B8%8A.docx) |
+| 第 13 课 | 名词所有格下 | [下载](https://github.com/RobotSpa/grammar/raw/main/docs/Level1/%E9%AB%98%E4%B8%AD%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95%E5%88%87%E7%89%87-Level1-%E7%AC%AC13%E8%AF%BE-%E5%90%8D%E8%AF%8D%E6%89%80%E6%9C%89%E6%A0%BC%E4%B8%8B.docx) |
+
+**Level 1 已完成 13 节，合计 6.6 万字，182 道题，全部自编。**
+
 ## 语法检察官
 
 **一个会自我进化的 Python 智能体，单文件自持。**
