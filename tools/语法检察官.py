@@ -345,7 +345,33 @@ def check(path):
     else:
         passes.append("段落长度：无憋气段")
 
-    # ── 15 格式残留 ──
+    # ── 15 逻辑闭环：开场承诺是否兑现、告别语是否只出现一次 ──
+    head = "".join(paras[:16])
+    tail_txt = "".join(paras[-26:])
+    loop = []
+    # 开场抛出的关键词，结尾必须回扣
+    for kw in ("语法填空", "高考", "下节课", "白送"):
+        if kw in head and kw not in tail_txt and kw != "下节课":
+            loop.append(f"开场提到「{kw}」，结尾没有回扣，承诺落空")
+    # 告别语只能出现在最后
+    byes = [i for i, p in enumerate(paras) if re.search(r"下节课(我们讲|见)", p)]
+    if byes and byes[0] < len(paras) - 22:
+        loop.append(f"告别语出现在第 {byes[0]} 段（全文共 {len(paras)} 段），"
+                    f"说完再见又继续讲课，等于告了两次别")
+    # 说了「下节课再讲」却在本课大讲特讲
+    for m in re.finditer(r"([\u4e00-\u9fff]{2,8})[^。]{0,20}下节课[^。]{0,14}(展开|细讲|再讲)", t):
+        term = m.group(1)
+        after = t[m.end():]
+        if after.count(term) > 8:
+            loop.append(f"说了「{term}下节课再展开」，可本课后文又出现 {after.count(term)} 次，自相矛盾")
+            break
+    if loop:
+        for x in loop:
+            issues.append(f"【逻辑不闭环】{x}")
+    else:
+        passes.append("逻辑闭环：开场承诺已兑现，收尾干净")
+
+    # ── 16 格式残留 ──
     for bad, why in [("|", "疑似表格残留"), ("•", "项目符号"), ("- ", "列表符号")]:
         if bad in t and t.count(bad) > 3:
             warns.append(f"疑似 {why}：出现 {t.count(bad)} 次「{bad}」")
