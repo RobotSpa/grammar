@@ -1262,6 +1262,18 @@ def check(path):
     fill = [a for a in ansList if len(a) > 1]
     pick = [a for a in ansList if len(a) == 1 and a.isalpha()]
 
+    # 同一道题里 say 与 tail 都点了答案，属同源，按题去重后再判
+    seen_pos, uniq = set(), []
+    for m in re.finditer(r"所以(?:这儿|这个空|这道题|两个空分别)?(?:就)?(?:填|选)\s*"
+                         r"((?:to |be )?[A-Za-z]+(?:\s*和\s*(?:to |be )?[A-Za-z]+)?|[A-D])", t):
+        blk = len([1 for mm in re.finditer(
+            r"\*{0,2}(?:课前测第\d题|例题\d|随堂练习题\d)\*{0,2}", t) if mm.start() < m.start()])
+        for wd in re.split(r"\s*和\s*", m.group(1)):
+            if (blk, wd) in seen_pos:
+                continue
+            seen_pos.add((blk, wd)); uniq.append(wd)
+    fill = [a for a in uniq if len(a) > 1]
+    pick = [a for a in uniq if len(a) == 1 and a.isalpha()]
     dup = [x for x in set(fill) if fill.count(x) > 1]
     if dup:
         issues.append(f"【出题·答案重复】{'、'.join(dup)} 在多道题里重复作答案，"
