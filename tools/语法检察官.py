@@ -1103,7 +1103,7 @@ def check(path):
     # ── 19 出题质量：答案重复 / 选项分布 / 争议词 / 超纲后缀 ──
     ansList = []
     for m in re.finditer(r"所以(?:这儿|这个空|这道题|两个空分别)?(?:就)?(?:填|选)\s*"
-                         r"([A-Za-z]+(?:\s*和\s*[A-Za-z]+)?|[A-D])", t):
+                         r"((?:to |be )?[A-Za-z]+(?:\s*和\s*(?:to |be )?[A-Za-z]+)?|[A-D])", t):
         for w in re.split(r"\s*和\s*", m.group(1)):
             ansList.append(w)
     fill = [a for a in ansList if len(a) > 1]
