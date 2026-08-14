@@ -47,17 +47,40 @@
 
 ## 语法检察官（质检智能体）
 
-**网页版 · 一键启动**：打开 [inspector.html](https://robotspa.github.io/grammar/inspector.html)，
-把 `.docx` 逐字稿直接拖进去，立刻出审查报告——不合格项、提醒项、通过项逐条列出，并给出 0–100 评分与合格／退回判定。
-
-**命令行版 · 批量检查**：
+### 一键全自动　`agent.py`
 
 ```bash
-python3 tools/inspector.py docs/Level1/某课.docx    # 检查单节
-python3 tools/inspector.py --all                    # 检查全部
+python3 tools/agent.py            # 全部课程：构建 → 审查 → 自动修正 → 重建 → 复审
+python3 tools/agent.py 03 05      # 只处理指定课次
+python3 tools/agent.py --check    # 只审查，不修正
+python3 tools/agent.py --commit   # 全部合格后自动提交 GitHub
 ```
 
-两版规则完全一致，覆盖 11 类：违禁词、术语红线、罗列体、题量规格、题面格式、题目衔接、
+不需要手动检查。它会自己跑完整个闭环，最多五轮，直到合格为止：
+
+1. **构建** —— 调用逐字稿源码生成 docx
+2. **审查** —— 11 类规则全查
+3. **修正** —— 直接改 `.js` 源码（不是只改 docx，所以重新生成也不会丢）
+4. **重建 → 复审** —— 循环，直到零不合格
+
+修正能力覆盖：罗列体改写、题目衔接补入、逐题互动补入、段落承接词补入、
+互动密度按缺口补足、违禁词与术语红线替换、题面格式修复。
+每轮修正前自动备份源码，**构建失败立即回滚**，不会把稿子改坏。
+
+无法自动修正的（题量不符、先报答案、内容性硬伤）会明确标出「需人工重写」并中止。
+
+### 网页版　`inspector.html`
+
+打开 [inspector.html](https://robotspa.github.io/grammar/inspector.html)，把 `.docx` 直接拖进去，
+当场出报告：印章式判定（合格／退回）、0–100 评分、不合格与提醒逐条列出并附原文位置。
+
+### 命令行审查　`inspector.py`
+
+```bash
+python3 tools/inspector.py --all
+```
+
+三者规则完全一致，覆盖 11 类：违禁词、术语红线、罗列体、题量规格、题面格式、题目衔接、
 先报答案、互动密度、逐题互动、段落承接率、句长书面化。**任何一项不合格即退回重做。**
 
 ### 标准样板
