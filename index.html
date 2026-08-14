@@ -102,15 +102,12 @@ fetch('data.json').then(r=>r.json()).then(data=>{
   const content=document.getElementById('content')
   const progRow=document.getElementById('progRow')
 
-  // 文件映射
-  const files={
-    "总大纲":{name:"总大纲(3Level×60节).xlsx",label:"总大纲 Excel",icon:"📊",type:"outline"},
-    "L1-01":{name:"Level1/高中英语语法切片-Level1-第01课-词类总览.docx",label:"下载逐字稿",icon:"📄",type:"docx"}
+  // 已完成课程的 Word 文件映射：key 为 "levelIdx-课号"
+  const docFiles={
+    "0-1":"docs/Level1/高中英语语法切片-Level1-第01课-词类总览.docx",
+    "0-2":"docs/Level1/高中英语语法切片-Level1-第02课-主语与谓语.docx"
   }
-
-  function fileLink(path,label,icon,cls){
-    return `<a class="dl-chip" href="docs/${path}" download>${icon} ${label}</a>`
-  }
+  const outlineFile="docs/高中英语语法切片-总大纲(3Level×60节).xlsx"
 
   // 进度
   data.forEach(lv=>{
@@ -147,14 +144,14 @@ fetch('data.json').then(r=>r.json()).then(data=>{
 
     // 下载区
     let dlHtml=`<div class="dl-row">
-      <a class="dl-btn outline" href="docs/高中英语语法切片-总大纲(3Level×60节).xlsx" download>
-        <span class="dl-icon">📊</span>总大纲 Excel
+      <a class="dl-btn outline" href="${outlineFile}" download>
+        <span class="dl-icon">\u{1F4CA}</span>总大纲 Excel
       </a>`
-    if(li===0){
-      dlHtml+=`<a class="dl-btn solid" href="docs/Level1/高中英语语法切片-Level1-第01课-词类总览.docx" download>
-        <span class="dl-icon">📄</span>第01课逐字稿 Word
+    lv.lessons.filter(l=>l.done&&docFiles[li+'-'+l.no]).forEach(l=>{
+      dlHtml+=`<a class="dl-btn solid" href="${docFiles[li+'-'+l.no]}" download>
+        <span class="dl-icon">\u{1F4C4}</span>第${String(l.no).padStart(2,'0')}课逐字稿
       </a>`
-    }
+    })
     dlHtml+=`</div>`
 
     // 按模块分组
@@ -168,9 +165,10 @@ fetch('data.json').then(r=>r.json()).then(data=>{
     let modsHtml=''
     Object.values(mods).forEach(m=>{
       let cardsHtml=m.items.map(l=>{
+        const key=li+'-'+l.no
         const chips=l.done
-          ? `<span class="chip done-chip">✓ 已完成</span>
-             ${li===0&&l.no===1?`<a class="dl-chip" href="docs/Level1/高中英语语法切片-Level1-第01课-词类总览.docx" download>📄 逐字稿</a>`:''}`
+          ? `<span class="chip done-chip">\u2713 已完成</span>`+
+            (docFiles[key]?`<a class="dl-chip" href="${docFiles[key]}" download>\u{1F4C4} 逐字稿</a>`:'')
           : `<span class="chip">待完成</span>`
         return `<div class="card${l.done?' done':''}">
           <div class="card-no">${String(l.no).padStart(2,'0')}</div>
