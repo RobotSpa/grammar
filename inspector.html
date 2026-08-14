@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>语法检察官</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --paper:#FBFAF7;      /* 稿纸 */
+  --grid:#E9E4D8;       /* 格线 */
+  --ink:#1C1C1A;        /* 墨 */
+  --ink-2:#57544C;      /* 淡墨 */
+  --zhu:#C8352B;        /* 朱批 */
+  --qing:#2F6B4F;       /* 通过 */
+  --zhe:#9C7A1E;        /* 提醒 */
+  --rule:#D8D2C4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px);
+  background-size:100% 2.05rem;
+  color:var(--ink);
+  font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  font-size:15px;line-height:2.05rem;
+  padding:0 0 6rem;
+}
+.wrap{max-width:940px;margin:0 auto;padding:0 28px}
+
+/* ── 报头 ── */
+header{border-bottom:3px double var(--ink);padding:3.1rem 0 1rem;margin-bottom:2rem;position:relative}
+h1{font-family:"Songti SC","SimSun",serif;font-size:44px;font-weight:900;letter-spacing:.22em;line-height:1.25}
+.sub{font-size:13px;color:var(--ink-2);letter-spacing:.16em;margin-top:.3rem}
+.seal{
+  position:absolute;right:6px;top:2.6rem;width:88px;height:88px;
+  border:3px solid var(--zhu);color:var(--zhu);border-radius:5px;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:"Songti SC","SimSun",serif;font-size:20px;font-weight:900;
+  letter-spacing:.1em;line-height:1.15;transform:rotate(-8deg);opacity:.9;
+}
+
+/* ── 投入口 ── */
+.drop{
+  border:2px dashed var(--rule);background:rgba(255,255,255,.55);
+  padding:2.4rem 1.5rem;text-align:center;cursor:pointer;transition:.15s;
+}
+.drop:hover,.drop.on{border-color:var(--zhu);background:rgba(200,53,43,.04)}
+.drop b{font-size:17px;display:block;margin-bottom:.2rem}
+.drop span{font-size:13px;color:var(--ink-2)}
+textarea{
+  width:100%;min-height:190px;margin-top:1rem;padding:14px 16px;
+  border:1px solid var(--rule);background:rgba(255,255,255,.7);
+  font-family:inherit;font-size:14px;line-height:1.95rem;color:var(--ink);resize:vertical;
+}
+textarea:focus{outline:none;border-color:var(--zhu)}
+.bar{display:flex;gap:12px;align-items:center;margin-top:1rem;flex-wrap:wrap}
+button{
+  font-family:inherit;font-size:14px;padding:9px 26px;border:1.5px solid var(--ink);
+  background:var(--ink);color:var(--paper);cursor:pointer;letter-spacing:.08em;
+}
+button:hover{background:var(--zhu);border-color:var(--zhu)}
+button.ghost{background:none;color:var(--ink)}
+button.ghost:hover{color:var(--zhu)}
+.fname{font-size:13px;color:var(--ink-2)}
+
+/* ── 判定条 ── */
+.verdict{display:none;margin-top:2.6rem;border-top:3px double var(--ink);padding-top:1.6rem}
+.vhead{display:flex;align-items:flex-start;gap:26px;flex-wrap:wrap}
+.stamp{
+  flex-shrink:0;width:132px;height:132px;border:4px solid;border-radius:6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:"Songti SC","SimSun",serif;transform:rotate(-6deg);
+}
+.stamp .w{font-size:34px;font-weight:900;letter-spacing:.14em;line-height:1.1}
+.stamp .n{font-size:12px;letter-spacing:.2em;margin-top:.35rem;font-family:ui-monospace,monospace}
+.stamp.ok{border-color:var(--qing);color:var(--qing)}
+.stamp.no{border-color:var(--zhu);color:var(--zhu)}
+.vmeta{flex:1;min-width:230px}
+.vmeta h2{font-family:"Songti SC","SimSun",serif;font-size:23px;letter-spacing:.08em;margin-bottom:.2rem}
+.vmeta p{font-size:13.5px;color:var(--ink-2)}
+.gauge{margin-top:.7rem;height:9px;background:var(--grid);position:relative;max-width:340px}
+.gauge i{position:absolute;left:0;top:0;bottom:0;display:block}
+
+/* ── 条目 ── */
+.grp{margin-top:2.4rem}
+.gtitle{
+  font-family:"Songti SC","SimSun",serif;font-size:16px;letter-spacing:.14em;
+  padding-bottom:.25rem;border-bottom:1px solid var(--rule);margin-bottom:.9rem;
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.gtitle em{font-style:normal;font-size:12px;color:var(--ink-2);font-family:ui-monospace,monospace}
+.item{display:flex;gap:13px;padding:.55rem 0;border-bottom:1px dotted var(--rule)}
+.item:last-child{border-bottom:none}
+.mk{flex-shrink:0;width:1.5rem;text-align:center;font-family:"Songti SC",serif;font-size:17px;font-weight:900}
+.mk.no{color:var(--zhu)}.mk.warn{color:var(--zhe)}.mk.ok{color:var(--qing)}
+.txt{flex:1}
+.txt b{font-weight:600}
+.ctx{
+  display:block;margin-top:.25rem;padding:.4rem .7rem;border-left:3px solid var(--zhu);
+  background:rgba(200,53,43,.05);font-size:12.5px;color:var(--ink-2);line-height:1.85rem;
+}
+.hint{display:block;font-size:12.5px;color:var(--ink-2);margin-top:.1rem}
+
+footer{margin-top:3.4rem;padding-top:1rem;border-top:1px solid var(--rule);
+  font-size:12px;color:var(--ink-2);letter-spacing:.06em}
+footer a{color:var(--zhu);text-decoration:none}
+@media(max-width:560px){h1{font-size:32px}.seal{display:none}.stamp{width:104px;height:104px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>语法检察官</h1>
+  <div class="sub">高中英语语法切片 · 逐字稿质量审查　v1.0</div>
+  <div class="seal">审查<br>专用</div>
+</header>
+
+<div class="drop" id="drop">
+  <b>把 .docx 逐字稿拖到这里</b>
+  <span>也可以点击选择文件，或直接把稿子粘贴到下面</span>
+  <input type="file" id="file" accept=".docx" hidden>
+</div>
+
+<textarea id="ta" placeholder="或者把逐字稿全文粘贴到这里……"></textarea>
+
+<div class="bar">
+  <button id="run">开始审查</button>
+  <button class="ghost" id="clr">清空</button>
+  <span class="fname" id="fname"></span>
+</div>
+
+<div class="verdict" id="out"></div>
+
+<footer>
+  审查依据：<a href="语法检察官-制作标准.md">语法检察官 · 制作标准</a>　|　
+  标准样板：<a href="docs/Level1/高中英语语法切片-Level1-第03课-宾语表语宾语补足语.docx">第 03 课</a>　|　
+  <a href="index.html">返回课程目录</a>
+</footer>
+
+</div>
+
+<script>
+/* ══════ 规则表 ══════ */
+const BANNED={
+ "口诀":"禁用口诀儿歌，高中生不吃这套","儿歌":"禁用口诀儿歌",
+ "闯关":"禁用游戏化包装，改用「例题」","通关":"禁用游戏化包装",
+ "解锁":"禁用「解锁技能」这类包装","太棒":"禁用夸张感叹","真棒":"禁用夸张感叹",
+ "不见不散":"禁用低龄化收尾，用「下节课见」","小宝贝":"面向高中生，禁用低龄称呼",
+ "小朋友":"面向高中生，禁用低龄称呼","宝宝":"面向高中生，禁用低龄称呼",
+ "例句：":"书面标记，口播稿不出现","彻底夯实":"营销腔","超重要":"营销腔",
+ "百试百灵":"夸大表述","黄金判据":"包装词，直说「判断标准」"
+};
+const TERM=[
+ [/because\s*是连词/,"because 是引导词不是连词；连词专指 and/but/or/so",null],
+ [/although\s*是连词/,"although 是引导词不是连词",null],
+ [/lie\s*短/,"lie 与 lay 同为三字母，长短记忆法失效；应用「带字母 a 的及物」",null],
+ [/短的那个不及物/,"长短记忆法对 lie/lay 失效，禁用",null],
+ [/\bme is\b/,"检验句用了宾格作主语；应换成人名或表人名词",null],
+ [/\bhim is\b/,"检验句用了宾格作主语；应换成人名或表人名词",/错的|宾格哪能/],
+ [/\bus are\b/,"检验句用了宾格作主语；应换成人名或表人名词",null],
+ [/was happened|were happened/,"happen 为不及物动词，无被动语态",/改错|错在|错了|错误|不能用被动|应改为|写成|改成|是错的/],
+ [/加 is 的办法|加一个 is/,"统一表述为「加 be 动词检验法」",null],
+ [/换成主格/,"检验句应直接换人名，不引入主格转换规则",null],
+];
+const INTERACT=["我问你","你先自己","先自己","找到了吗","对吧","别急","我猜","暂停","你看",
+ "想想","你自己","听好","跟我","我知道你","有没有","是不是","怎么办","行吗","通吗","有错吗",
+ "还记得","我们一起","先别","念一遍","你想","看出来了吗","发现","问自己","试试","扫一眼","拿笔","记一下"];
+const CONNECT=["好，","好。","那","来，","接着","现在","所以","但是","不过","再","然后","反过来","顺便","另外","最后","第一步","既然","先说"];
+const zh=s=>(s.match(/[\u4e00-\u9fff]/g)||[]).length;
+
+function inspect(t){
+  const P=t.split("\n").map(x=>x.trim()).filter(Boolean);
+  const N=zh(t), no=[], warn=[], ok=[];
+
+  const hitB=Object.entries(BANNED).filter(([w])=>t.includes(w));
+  hitB.forEach(([w,r])=>no.push({t:`出现违禁词「${w}」`,h:r}));
+  if(!hitB.length) ok.push({t:"违禁词",h:"无"});
+
+  let tr=0;
+  TERM.forEach(([re,msg,ex])=>{
+    const m=re.exec(t); if(!m) return;
+    const c=t.slice(Math.max(0,m.index-60),m.index+60).replace(/\n/g," ");
+    if(ex&&ex.test(c)) return;
+    tr++; no.push({t:"术语红线："+msg,c:"…"+c.slice(30,110)+"…"});
+  });
+  if(!tr) ok.push({t:"术语红线",h:"无"});
+
+  let runs=[],cnt=0,st=0;
+  P.forEach((p,i)=>{
+    if(/^第[一二三四五六七八九十]+[种组对个类步条]/.test(p)){ if(!cnt)st=i; cnt++; }
+    else{ if(cnt>=3)runs.push([cnt,P[st]]); cnt=0; }
+  });
+  if(cnt>=3)runs.push([cnt,P[st]]);
+  runs=runs.filter(r=>!/^第[一二三四五]条?，/.test(r[1]));
+  runs.forEach(([n,s])=>no.push({t:`罗列体：连续 ${n} 段同模板开头，读起来像讲义`,c:s.slice(0,40)+"…"}));
+  if(!runs.length) ok.push({t:"罗列体",h:"无"});
+
+  const cnti=k=>new Set([...t.matchAll(new RegExp(k+"第?(\\d)题?","g"))].map(m=>m[1])).size;
+  const q=cnti("课前测"),e=cnti("例题"),r=cnti("随堂练习题");
+  if(q!==6||e!==2||r!==6) no.push({t:`题量不符：课前测 ${q}（应6）、例题 ${e}（应2）、随堂 ${r}（应6）`});
+  else ok.push({t:"题量",h:"课前测6 + 例题2 + 随堂6"});
+
+  let fmt=0;
+  if(t.includes("　　　　")){no.push({t:"题面用全角空格占位，必须改为下划线 ____________"});fmt++;}
+  const ob=P.filter(p=>/[。？]\s*A[.、]\s*\S+.{0,60}B[.、]/.test(p));
+  if(ob.length){no.push({t:`${ob.length} 处选择题选项未独立成行`,c:ob[0].slice(0,40)+"…"});fmt++;}
+  if(!fmt) ok.push({t:"题面格式",h:"下划线与选项行规范"});
+
+  const nl=[];
+  P.forEach((p,i)=>{
+    if(/^\**(课前测第\d题|例题\d|随堂练习题\d)\**$/.test(p)){
+      const pv=i?P[i-1]:"";
+      const good=pv.length<46&&["第一","第二","第三","第四","第五","最后","接下来","先看","来看","接着","我们先"].some(k=>pv.includes(k));
+      if(!good) nl.push(p.replace(/\*/g,""));
+    }
+  });
+  if(nl.length) no.push({t:`${nl.length} 道题前没有口语衔接语`,c:nl.slice(0,4).join("、")});
+  else ok.push({t:"题目衔接",h:"14 道题全部有衔接语"});
+
+  const early=[];
+  P.forEach((p,i)=>{
+    if(!/^\**(课前测第\d题|例题\d|随堂练习题\d)/.test(p))return;
+    for(let j=1;j<=3;j++){
+      const sp=P[i+j]||"";
+      if(sp.startsWith("题目：")||/^A[.、]/.test(sp))continue;
+      if(/答案是|这道题的答案|正确答案/.test(sp)&&j<=2)early.push(p.replace(/\*/g,""));
+      break;
+    }
+  });
+  if(early.length) no.push({t:`${early.length} 处一上来就给结论，违反「动作→依据→结论」`,c:early.slice(0,4).join("、")});
+  else ok.push({t:"讲题顺序",h:"先推理后答案"});
+
+  const ic=INTERACT.reduce((a,k)=>a+(t.split(k).length-1),0), dens=ic/Math.max(N,1)*1000;
+  if(dens<8) no.push({t:`互动密度仅 ${dens.toFixed(1)}/千字，低于 8`,h:"讲解偏念稿，缺少提问、停顿、预判学生反应"});
+  else if(dens<12) warn.push({t:`互动密度 ${dens.toFixed(1)}/千字，偏低`,h:"建议 ≥12"});
+  else ok.push({t:"互动密度",h:dens.toFixed(1)+"/千字"});
+
+  const blk=t.split(/\**(?:课前测第\d题|例题\d|随堂练习题\d)\**/).slice(1);
+  const weak=blk.map((b,i)=>[i+1,INTERACT.reduce((a,k)=>a+(b.slice(0,1400).split(k).length-1),0)]).filter(x=>x[1]<2);
+  if(weak.length) no.push({t:`${weak.length} 道题的讲评互动少于 2 处`,c:weak.slice(0,7).map(x=>`第${x[0]}块(${x[1]})`).join("、")});
+  else ok.push({t:"逐题互动",h:"每道题讲评均有互动"});
+
+  const body=P.filter(p=>p.length>12&&!p.startsWith("题目：")&&!/^\**(答案|解析|课前测|例题|随堂)/.test(p));
+  const lk=body.filter(p=>CONNECT.some(c=>p.startsWith(c))).length, ratio=lk/Math.max(body.length,1)*100;
+  if(ratio<12) no.push({t:`段落承接率仅 ${ratio.toFixed(0)}%，段与段是硬切`,h:"每段开头多用「好／那／来／别急／接着看」承上"});
+  else if(ratio<18) warn.push({t:`段落承接率 ${ratio.toFixed(0)}%`,h:"可再加连接词"});
+  else ok.push({t:"段落承接率",h:ratio.toFixed(0)+"%"});
+
+  const ss=t.split(/[。！？]/).filter(s=>zh(s)>0);
+  const avg=ss.reduce((a,s)=>a+zh(s),0)/Math.max(ss.length,1);
+  const lng=ss.filter(s=>zh(s)>55).length;
+  if(avg>32) no.push({t:`平均句长 ${avg.toFixed(0)} 字，过于书面`,h:"口播稿应多用短句"});
+  else if(avg>27) warn.push({t:`平均句长 ${avg.toFixed(0)} 字`,h:"可再断碎一些"});
+  else ok.push({t:"平均句长",h:avg.toFixed(0)+" 字"});
+  if(lng>6) warn.push({t:`${lng} 句超过 55 字`,h:"建议拆开"});
+
+  return {no,warn,ok,N};
+}
+
+/* ══════ 渲染 ══════ */
+function render(res,label){
+  const {no,warn,ok,N}=res;
+  const total=no.length+warn.length+ok.length;
+  const score=Math.max(0,Math.round(100-no.length*11-warn.length*3));
+  const pass=no.length===0;
+  const col=pass?"var(--qing)":"var(--zhu)";
+  const grp=(title,arr,cls,mark)=>arr.length?`
+    <div class="grp"><div class="gtitle">${title}<em>${arr.length}</em></div>
+    ${arr.map(x=>`<div class="item"><div class="mk ${cls}">${mark}</div><div class="txt">
+      <b>${x.t}</b>${x.h?`<span class="hint">${x.h}</span>`:""}${x.c?`<span class="ctx">${x.c}</span>`:""}
+    </div></div>`).join("")}</div>`:"";
+
+  document.getElementById("out").style.display="block";
+  document.getElementById("out").innerHTML=`
+    <div class="vhead">
+      <div class="stamp ${pass?"ok":"no"}">
+        <div class="w">${pass?"合格":"退回"}</div><div class="n">${score} / 100</div>
+      </div>
+      <div class="vmeta">
+        <h2>${label||"审查报告"}</h2>
+        <p>全文 ${N} 字　·　共查 ${total} 项　·　不合格 ${no.length}　提醒 ${warn.length}　通过 ${ok.length}</p>
+        <div class="gauge"><i style="width:${score}%;background:${col}"></i></div>
+        <p style="margin-top:.5rem">${pass?"符合《语法检察官·制作标准》全部要求，可以交付。":"存在不合格项，须修改后重新审查。"}</p>
+      </div>
+    </div>
+    ${grp("不合格",no,"no","✗")}
+    ${grp("提醒",warn,"warn","!")}
+    ${grp("通过",ok,"ok","✓")}`;
+  document.getElementById("out").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ══════ 交互 ══════ */
+const drop=document.getElementById("drop"),file=document.getElementById("file"),
+      ta=document.getElementById("ta"),fname=document.getElementById("fname");
+let label="";
+drop.onclick=()=>file.click();
+["dragenter","dragover"].forEach(k=>drop.addEventListener(k,e=>{e.preventDefault();drop.classList.add("on")}));
+["dragleave","drop"].forEach(k=>drop.addEventListener(k,e=>{e.preventDefault();drop.classList.remove("on")}));
+drop.addEventListener("drop",e=>load(e.dataTransfer.files[0]));
+file.onchange=e=>load(e.target.files[0]);
+
+async function load(f){
+  if(!f)return;
+  if(!f.name.endsWith(".docx")){fname.textContent="只支持 .docx，或直接粘贴文本";return;}
+  fname.textContent="正在读取 "+f.name+" …";
+  try{
+    const zip=await JSZip.loadAsync(await f.arrayBuffer());
+    const xml=await zip.file("word/document.xml").async("string");
+    const txt=xml.replace(/<w:p[ >]/g,"\n<w:p ").replace(/<[^>]+>/g,"")
+                 .replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">");
+    ta.value=txt.split("\n").map(s=>s.trim()).filter(Boolean).join("\n");
+    label=f.name.replace(/\.docx$/,"");
+    fname.textContent="已读取 "+f.name+"（"+zh(ta.value)+" 字）";
+  }catch(err){fname.textContent="读取失败，请改用粘贴文本";}
+}
+document.getElementById("run").onclick=()=>{
+  const t=ta.value.trim();
+  if(!t){fname.textContent="请先拖入文件或粘贴稿子";return;}
+  render(inspect(t),label);
+};
+document.getElementById("clr").onclick=()=>{
+  ta.value="";label="";fname.textContent="";
+  document.getElementById("out").style.display="none";
+};
+</script>
+</body>
+</html>
