@@ -331,7 +331,21 @@ def check(path):
     else:
         passes.append("时态说明：均已点明具体时态")
 
-    # ── 14 格式残留 ──
+    # ── 14 段落憋气：单段过长，主播一口气念不完 ──
+    long_p = [p for p in paras
+              if zh(p) > TH.get("单段字数上限", 60)
+              and not p.startswith(("题目", "答案", "解析"))
+              and not re.match(r"^A[.、]", p)]
+    if len(long_p) > 2:
+        issues.append(f"【段落憋气】{len(long_p)} 个段落超过 "
+                      f"{TH.get('单段字数上限', 60)} 字，主播一口气念不完，"
+                      f"必须拆开\n            例：{long_p[0][:44]}…")
+    elif long_p:
+        warns.append(f"{len(long_p)} 个段落偏长：{long_p[0][:26]}…")
+    else:
+        passes.append("段落长度：无憋气段")
+
+    # ── 15 格式残留 ──
     for bad, why in [("|", "疑似表格残留"), ("•", "项目符号"), ("- ", "列表符号")]:
         if bad in t and t.count(bad) > 3:
             warns.append(f"疑似 {why}：出现 {t.count(bad)} 次「{bad}」")
