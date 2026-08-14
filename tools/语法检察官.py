@@ -20,77 +20,56 @@ import os
 import re
 import io
 import sys
+import json
 import time
 import glob
+import datetime
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "..", "proj")
 DOCS = os.path.join(ROOT, "docs", "Level1")
+RULES = os.path.join(ROOT, "tools", "铁律.json")
+LOG = os.path.join(ROOT, "tools", "审查日志.md")
+
+
+def load_rules():
+    with io.open(RULES, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_rules(r):
+    r["更新于"] = datetime.date.today().isoformat()
+    with io.open(RULES, "w", encoding="utf-8") as f:
+        json.dump(r, f, ensure_ascii=False, indent=2)
+
+
+RB = load_rules()
+IRON = RB["铁律"]
+TH = RB["阈值"]
 
 # ══════════════════════════════════════════════════════════
 #  第一章  违禁词：低龄化包装、营销腔、书面标记
 # ══════════════════════════════════════════════════════════
-BANNED = {
-    "口诀": "禁用口诀儿歌，高中生不吃这套",
-    "儿歌": "禁用口诀儿歌",
-    "闯关": "禁用游戏化包装，改用「例题」",
-    "通关": "禁用游戏化包装",
-    "解锁": "禁用「解锁技能」这类包装",
-    "太棒": "禁用夸张感叹",
-    "真棒": "禁用夸张感叹",
-    "不见不散": "禁用低龄化收尾，用「下节课见」",
-    "小宝贝": "面向高中生，禁用低龄称呼",
-    "小朋友": "面向高中生，禁用低龄称呼",
-    "宝宝": "面向高中生，禁用低龄称呼",
-    "例句：": "书面标记，口播稿不出现",
-    "彻底夯实": "营销腔，直接说「下面是六道题」",
-    "超重要": "营销腔",
-    "百试百灵": "夸大表述",
-    "黄金判据": "包装词，直说「判断标准」",
-    "跟上了吗？我们接着说": "机械模板互动句，读起来像机器人",
-    "这一点你听明白了吗": "机械模板互动句，读起来像机器人",
-    "你先在心里过一遍。": "机械模板互动句，读起来像机器人",
-    "来，跟我一起走一遍流程": "机械模板互动句，读起来像机器人",
-}
+BANNED = RB["违禁词"]
 
 # ══════════════════════════════════════════════════════════
 #  第二章  术语红线：说错就是硬伤
 # ══════════════════════════════════════════════════════════
-TERM_RED = [
-    (r"because\s*是连词", "because 是引导词不是连词；连词专指 and/but/or/so"),
-    (r"although\s*是连词", "although 是引导词不是连词"),
-    (r"when\s*是连词", "when 是引导词不是连词"),
-    (r"lie\s*短", "lie 与 lay 同为三个字母，长短记忆法失效；应用「带字母 a 的及物」"),
-    (r"短的那个不及物", "长短记忆法对 lie/lay 失效，禁用"),
-    (r"make、let、have\s*和感官动词.{0,20}被动之后要把\s*to\s*还回来",
-     "let/have 一般不用被动；只有 make 与感官动词适用「被动还 to」"),
-    (r"\bme is\b", "检验句用了宾格作主语；应换成人名或表人名词"),
-    (r"\bhim is\b(?!.{0,30}错)", "检验句用了宾格作主语；应换成人名或表人名词"),
-    (r"\bus are\b", "检验句用了宾格作主语；应换成人名或表人名词"),
-    (r"was happened|were happened", "happen 为不及物动词，无被动语态", "改错|错在|错了|错误|不能用被动|应改为|写成|改成|是错的"),
-    (r"加 is 的办法|加一个 is", "统一表述为「加 be 动词检验法」"),
-    (r"换成主格", "检验句应直接换人名/表人名词，不引入主格转换规则"),
-]
+TERM_RED = [tuple(x) for x in RB["术语红线"]]
 
 # ══════════════════════════════════════════════════════════
 #  第三章  互动标记：讲题必须跟学生对话
 # ══════════════════════════════════════════════════════════
-INTERACT = [
-    "明白了吗", "跟上了吗", "你注意", "特别注意", "清楚了吗", "记住了吗", "会了吗", "看明白", "你先", "别急着", "自己做", "自己想", "自己判断", "在心里", "跟着我", "留意", "琢磨", "我问你", "你先自己", "先自己", "找到了吗", "对吧", "别急", "我猜", "暂停",
-    "你看", "想想", "你自己", "听好", "跟我", "我知道你", "有没有", "是不是",
-    "怎么办", "行吗", "通吗", "有错吗", "还记得", "我们一起", "先别", "念一遍",
-    "你想", "看出来了吗", "发现", "问自己", "试试", "扫一眼", "拿笔", "记一下",
-]
+INTERACT = RB["互动词表"]
 
 # 段落连接词：丝滑度指标
-CONNECT = ("好，", "好。", "那", "来，", "接着", "现在", "所以", "但是", "不过",
-           "再", "然后", "反过来", "顺便", "另外", "最后", "第一步", "既然", "既然如此")
+CONNECT = tuple(RB["承接词表"])
 
 # ══════════════════════════════════════════════════════════
 #  第四章  结构规格
 # ══════════════════════════════════════════════════════════
-SPEC = {"课前测": 6, "例题": 2, "随堂练习题": 6}
+SPEC = RB["题量规格"]
 BLANK = "____________"
 
 
@@ -206,10 +185,10 @@ def check(path):
     # ── 8 互动密度 ──
     ic = sum(t.count(k) for k in INTERACT)
     per_k = ic / max(total_zh, 1) * 1000
-    if per_k < 8:
-        issues.append(f"【互动不足】互动标记密度 {per_k:.1f}/千字，低于 8。讲解偏念稿")
-    elif per_k < 12:
-        warns.append(f"互动密度 {per_k:.1f}/千字，偏低（建议 ≥12）")
+    if per_k < TH["互动密度_每千字"]:
+        issues.append(f"【互动不足】互动标记密度 {per_k:.1f}/千字，低于 " + str(TH["互动密度_每千字"]) + "。讲解偏念稿")
+    elif per_k < TH["互动密度_目标"]:
+        warns.append(f"互动密度 {per_k:.1f}/千字，偏低（建议 ≥{TH['互动密度_目标']}）")
     else:
         passes.append(f"互动密度：{per_k:.1f}/千字")
 
@@ -219,7 +198,7 @@ def check(path):
     for idx, b in enumerate(blocks[1:], 1):
         b = b[:1400]
         n = sum(b.count(k) for k in INTERACT)
-        if n < 2:
+        if n < TH["逐题互动_每题最少"]:
             weak.append(f"第{idx}块({n})")
     if weak:
         issues.append(f"【互动不足】{len(weak)} 道题的讲评互动标记少于 2 个：{', '.join(weak[:6])}")
@@ -231,9 +210,9 @@ def check(path):
             and not re.match(r"^\*{0,2}(答案|解析|课前测|例题|随堂)", p)]
     linked = sum(1 for p in body if any(p.startswith(cw) for cw in CONNECT))
     ratio = linked / max(len(body), 1) * 100
-    if ratio < 12:
+    if ratio < TH["段落承接率"]:
         issues.append(f"【不够丝滑】仅 {ratio:.0f}% 的段落有承接词开头，段与段是硬切")
-    elif ratio < 18:
+    elif ratio < TH["段落承接率_目标"]:
         warns.append(f"段落承接率 {ratio:.0f}%，可再加连接词")
     else:
         passes.append(f"段落承接率：{ratio:.0f}%")
@@ -241,14 +220,14 @@ def check(path):
     # ── 10 句长：书面化检测 ──
     sents = [s for s in re.split(r"[。！？]", t) if zh(s) > 0]
     avg = sum(zh(s) for s in sents) / max(len(sents), 1)
-    long_n = sum(1 for s in sents if zh(s) > 55)
-    if avg > 32:
+    long_n = sum(1 for s in sents if zh(s) > TH["超长句_字数线"])
+    if avg > TH["平均句长_上限"]:
         issues.append(f"【书面化】平均句长 {avg:.0f} 字，偏长。口播稿应多用短句")
-    elif avg > 27:
+    elif avg > TH["平均句长_目标"]:
         warns.append(f"平均句长 {avg:.0f} 字，可再断碎一些")
     else:
         passes.append(f"平均句长：{avg:.0f} 字")
-    if long_n > 6:
+    if long_n > TH["超长句_上限句数"]:
         warns.append(f"{long_n} 句超过 55 字，建议拆开")
 
     # ── 11 格式残留 ──
@@ -282,14 +261,7 @@ LEAD_HW = ["我们先来看第一题。", "接下来第二题。", "来，第三
            "第四题。", "第五题，接着看。", "最后一题了。"]
 
 # 讲题开场的互动句（按题型轮换，避免雷同）
-OPEN_INTERACT = [
-    "这道题你先自己做一遍，做完再听我讲。",
-    "先别急着往下看，你自己想十秒。",
-    "来，跟我一起走一遍流程。",
-    "这道题你先在心里过一遍，我再说。",
-    "先自己判断一下，暂停五秒。",
-    "你先看清楚题干，我们一步一步来。",
-]
+OPEN_INTERACT = RB["互动词表"]
 
 # 段落承接词（语义中性，前置安全）
 CONNECT_IN = ["那", "好，", "接着说，", "再看，"]
@@ -595,6 +567,11 @@ def run(ids=None, auto=True, commit=False):
     print("\n" + "═" * 68)
     print("  语法检察官 · 智能体　　自动构建 → 审查 → 修正 → 复审")
     print("═" * 68)
+    print("  【铁律】" + IRON[:34] + "……")
+    print(f"  规则库 v{RB['版本']}　违禁 {len(BANNED)} · 红线 {len(TERM_RED)} · "
+          f"互动词 {len(INTERACT)} · 硬伤 {len(RB['硬伤清单'])}")
+    print("═" * 68)
+    rows = []
 
     todo = lessons(ids)
     if not todo:
@@ -616,6 +593,7 @@ def run(ids=None, auto=True, commit=False):
             name, zh, issues, warns, passes = check(d)
             if not issues:
                 print(f"  第{rnd}轮审查：合格　（{zh} 字，{len(passes)} 项通过）")
+                rows.append((n, zh, [], passes))
                 break
             print(f"  第{rnd}轮审查：{len(issues)} 项不合格")
             for x in issues:
@@ -640,8 +618,9 @@ def run(ids=None, auto=True, commit=False):
         else:
             print("  ✗ 五轮仍未通过，需人工介入"); fail += 1
 
+    write_log(rows)
     print("\n" + "═" * 68)
-    print(f"  处理 {len(todo)} 节　·　未通过 {fail} 节")
+    print(f"  处理 {len(todo)} 节　·　未通过 {fail} 节　·　已留档 {os.path.basename(LOG)}")
     print("═" * 68)
 
     if commit and not fail:
@@ -649,6 +628,87 @@ def run(ids=None, auto=True, commit=False):
         print("  已自动提交 GitHub\n")
     return fail
 
+
+
+
+# ══════════════════════════════════════════════
+#  自学习：把新踩的坑沉淀进规则库
+# ══════════════════════════════════════════════
+
+def learn(kind, value, reason="", source=""):
+    """把一条新教训写进铁律，此后永久生效"""
+    r = load_rules()
+    kind = kind.lower()
+    ok = False
+    if kind in ("ban", "违禁"):
+        r["违禁词"][value] = reason or "新增违禁表述"
+        ok = "违禁词"
+    elif kind in ("term", "术语"):
+        r["术语红线"].append([value, reason or "术语红线", None])
+        ok = "术语红线"
+    elif kind in ("interact", "互动"):
+        if value not in r["互动词表"]:
+            r["互动词表"].append(value)
+        ok = "互动词表"
+    elif kind in ("connect", "承接"):
+        if value not in r["承接词表"]:
+            r["承接词表"].append(value)
+        ok = "承接词表"
+    elif kind in ("fact", "硬伤"):
+        r["硬伤清单"].append(value)
+        ok = "硬伤清单"
+    else:
+        print("  类别只能是：违禁 / 术语 / 互动 / 承接 / 硬伤"); return 1
+    r["学习记录"].append({
+        "日期": datetime.date.today().isoformat(),
+        "来源": source or "人工登记",
+        "教训": reason or value,
+        "落地": f"写入{ok}",
+    })
+    r["版本"] += 1
+    save_rules(r)
+    print(f"\n  已学会。写入{ok}：{value}")
+    print(f"  规则库版本 → v{r['版本']}，此后每次审查自动生效。\n")
+    return 0
+
+
+def show_rules():
+    r = load_rules()
+    print("\n" + "═" * 68)
+    print("  铁律")
+    print("═" * 68)
+    for line in wrap_cn(r["铁律"], 60):
+        print("  " + line)
+    print(f"\n  规则库 v{r['版本']}　更新于 {r['更新于']}")
+    print(f"  违禁词 {len(r['违禁词'])} 条　术语红线 {len(r['术语红线'])} 条　"
+          f"互动词 {len(r['互动词表'])} 个　承接词 {len(r['承接词表'])} 个　"
+          f"硬伤 {len(r['硬伤清单'])} 条")
+    print(f"\n  不可代笔项：{'、'.join(r['不可代笔项'])}")
+    print("\n  学习记录（最近 8 条）")
+    print("  " + "─" * 64)
+    for x in r["学习记录"][-8:]:
+        print(f"  {x['日期']}　{x['来源']}")
+        for line in wrap_cn(x["教训"], 56):
+            print("      " + line)
+        print(f"      → {x['落地']}")
+    print()
+
+
+def wrap_cn(t, n):
+    return [t[i:i + n] for i in range(0, len(t), n)]
+
+
+def write_log(rows):
+    """每次审查留档，便于回看哪类问题反复出现"""
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    old = io.open(LOG, encoding="utf-8").read() if os.path.exists(LOG) else "# 审查日志\n"
+    lines = [f"\n## {now}　规则库 v{RB['版本']}\n"]
+    for n, zh, issues, passes in rows:
+        mark = "合格" if not issues else f"退回（{len(issues)} 项）"
+        lines.append(f"- **第 {n} 课**　{zh} 字　{mark}")
+        for x in issues:
+            lines.append(f"  - {x.split(chr(10))[0]}")
+    io.open(LOG, "w", encoding="utf-8").write(old + "".join(l + "\n" for l in lines))
 
 
 
@@ -674,6 +734,18 @@ def watch():
 
 if __name__ == "__main__":
     a = sys.argv[1:]
+    if "--rules" in a:
+        show_rules(); sys.exit(0)
+    if "--learn" in a:
+        i = a.index("--learn")
+        rest = a[i + 1:]
+        if len(rest) < 2:
+            print("\n  用法：--learn <类别> <内容> [原因] [来源]")
+            print("  类别：违禁 / 术语 / 互动 / 承接 / 硬伤\n")
+            sys.exit(1)
+        sys.exit(learn(rest[0], rest[1],
+                       rest[2] if len(rest) > 2 else "",
+                       rest[3] if len(rest) > 3 else ""))
     if "--watch" in a:
         watch(); sys.exit(0)
     ids = [x for x in a if x.isdigit()]
