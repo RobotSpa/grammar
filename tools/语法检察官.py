@@ -1321,7 +1321,13 @@ def check(path):
             seen_pos.add((blk, wd)); uniq.append(wd)
     fill = [a for a in uniq if len(a) > 1]
     pick = [a for a in uniq if len(a) == 1 and a.isalpha()]
-    dup = [x for x in set(fill) if fill.count(x) > 1]
+    # 本节课的核心考点词，重复出现是必然的，不算重复出题
+    core = set()
+    head = "".join(paras[:12])
+    for w in re.findall(r"[A-Za-z]{1,12}", head):
+        if head.count(w) >= 2 and len(w) > 1:
+            core.add(w)
+    dup = [x for x in set(fill) if fill.count(x) > 1 and x not in core]
     if dup:
         issues.append(f"【出题·答案重复】{'、'.join(dup)} 在多道题里重复作答案，"
                       f"等于白出一道题")
