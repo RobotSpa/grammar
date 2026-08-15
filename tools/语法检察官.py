@@ -1327,7 +1327,8 @@ def check(path):
     for w in re.findall(r"[A-Za-z]{1,12}", head):
         if head.count(w) >= 2 and len(w) > 1:
             core.add(w)
-    dup = [x for x in set(fill) if fill.count(x) > 1 and x not in core]
+    core_lc = {w.lower() for w in core}
+    dup = [x for x in set(fill) if fill.count(x) > 1 and x.lower() not in core_lc]
     if dup:
         issues.append(f"【出题·答案重复】{'、'.join(dup)} 在多道题里重复作答案，"
                       f"等于白出一道题")
